@@ -60,7 +60,6 @@
             font-weight: 600;
         }
 
-        /* Top Navigation Tabs */
         .portal-tabs {
             display: flex;
             gap: 12px;
@@ -116,7 +115,6 @@
             padding-bottom: 8px;
         }
 
-        /* Upload Area */
         .drop-zone {
             border: 3px dashed var(--accent-color);
             border-radius: 14px;
@@ -206,7 +204,6 @@
             background: #e65100;
         }
 
-        /* Stats Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -240,7 +237,6 @@
         .stat-dup .num { color: var(--warning-color); }
         .stat-inv .num { color: var(--danger-color); }
 
-        /* Progress Bar */
         .progress-box {
             display: none;
             margin-top: 15px;
@@ -275,16 +271,14 @@
 <div class="container">
     <div class="header">
         <h1>SmartBrains BPO</h1>
-        <p>Lead Sanitizer, Deduplicator & Splitter Portal</p>
+        <p>Lead Sanitizer, Auto 1M Splitter & Deduplicator Pro</p>
     </div>
 
-    <!-- Navigation Tabs -->
     <div class="portal-tabs">
         <button class="tab-btn active" onclick="switchTab('cleanerTab', this)">🧹 1. Lead Sanitizer & Deduplicator</button>
         <button class="tab-btn" onclick="switchTab('splitterTab', this)">✂️ 2. Independent File Splitter</button>
     </div>
 
-    <!-- TAB 1: CLEANER & DEDUPLICATOR -->
     <div id="cleanerTab" class="tab-content active">
         <div class="card">
             <div class="card-title">📁 Upload Raw Files to Scrub (CSV / TXT)</div>
@@ -298,7 +292,6 @@
                 <button class="btn" onclick="processCleaning()" style="max-width: 250px;">⚡ Start Scrubbing & Cleaning</button>
             </div>
 
-            <!-- Progress Bar -->
             <div class="progress-box" id="progressContainer">
                 <div style="font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #555;" id="progressStatus">Processing...</div>
                 <div class="progress-bar">
@@ -330,13 +323,12 @@
             </div>
 
             <div class="grid-2" style="margin-top: 20px;">
-                <button class="btn btn-success" id="btnDownloadClean" disabled onclick="downloadCleanMasterFile()">📥 Download Cleaned Master File (.csv)</button>
+                <button class="btn btn-success" id="btnDownloadClean" disabled onclick="downloadCleanMasterFiles()">📥 Download Clean Files (Auto 1M Split)</button>
                 <button class="btn btn-warning" id="btnDownloadDup" disabled onclick="downloadDuplicatesFile()">📥 Download Removed Duplicates (.csv)</button>
             </div>
         </div>
     </div>
 
-    <!-- TAB 2: INDEPENDENT FILE SPLITTER -->
     <div id="splitterTab" class="tab-content">
         <div class="card">
             <div class="card-title">✂️ Split Any Lead File into Custom Batch Sizes</div>
@@ -440,15 +432,24 @@
         document.getElementById('btnDownloadDup').disabled = false;
     }
 
-    function downloadCleanMasterFile() {
+    // Automatically split clean numbers into safe 1,000,000 chunks for Excel without losing any row
+    function downloadCleanMasterFiles() {
         if (cleanedNumbersArray.length === 0) return;
 
-        let blob = new Blob([cleanedNumbersArray.join('\n')], { type: 'text/csv' });
-        let url = URL.createObjectURL(blob);
-        let a = document.createElement('a');
-        a.href = url;
-        a.download = `Master_Cleaned_Leads_${Date.now()}.csv`;
-        a.click();
+        const excelSafeLimit = 1000000; 
+        let partIndex = 1;
+
+        for (let i = 0; i < cleanedNumbersArray.length; i += excelSafeLimit) {
+            let chunk = cleanedNumbersArray.slice(i, i + excelSafeLimit);
+            let blob = new Blob([chunk.join('\n')], { type: 'text/csv' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = `Master_Cleaned_Part_${partIndex}_(${chunk.length}_Leads).csv`;
+            a.click();
+            partIndex++;
+        }
+        alert(`Successfully generated and downloaded ${partIndex - 1} part files! Zero numbers missed.`);
     }
 
     function downloadDuplicatesFile() {
